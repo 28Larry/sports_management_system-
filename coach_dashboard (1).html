@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Coach Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Coach Dashboard</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Team Information -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Team Information</h4>
+            </div>
+            <div class="card-body">
+                {% if team %}
+                    <h3 class="text-center mb-3">{{ team.team_name }}</h3>
+                    <p><strong>League:</strong> {{ team.league }}</p>
+                    <p><strong>Season Record:</strong> {{ team.wins }}W - {{ team.draws }}D - {{ team.losses }}L</p>
+                    <div class="d-grid mt-3">
+                        <a href="{{ url_for('view_team', team_id=team.team_id) }}" class="btn btn-primary">Team Details</a>
+                    </div>
+                {% else %}
+                    <p class="text-center">No team assigned yet.</p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('coach_team_assignment') }}" class="btn btn-primary">Request Team Assignment</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Team Stats</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h2>{{ team_stats.player_count|default(0) }}</h2>
+                        <p>Players</p>
+                    </div>
+                    <div class="col-4">
+                        <h2>{{ team_stats.avg_goals|default('0.0') }}</h2>
+                        <p>Avg Goals</p>
+                    </div>
+                    <div class="col-4">
+                        <h2>{{ team_stats.avg_conceded|default('0.0') }}</h2>
+                        <p>Avg Conceded</p>
+                    </div>
+                </div>
+                <div class="d-grid mt-3">
+                    <a href="{{ url_for('team_statistics') }}" class="btn btn-outline-success">Full Statistics</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Upcoming Matches -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Upcoming Matches</h4>
+            </div>
+            <div class="card-body">
+                {% if upcoming_matches %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Opponent</th>
+                                    <th>Venue</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for match in upcoming_matches %}
+                                    <tr>
+                                        <td>{{ match.date_time }}</td>
+                                        <td>
+                                            {% if match.is_home %}
+                                                vs {{ match.away_team }}
+                                            {% else %}
+                                                @ {{ match.home_team }}
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ match.venue }}</td>
+                                        <td><span class="badge bg-warning">{{ match.status }}</span></td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ url_for('match.match_details', match_id=match.id) }}" class="btn btn-outline-primary">Details</a>
+                                                <a href="{{ url_for('squad_selection', match_id=match.id) }}" class="btn btn-outline-success">Squad</a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center">No upcoming matches scheduled.</p>
+                {% endif %}
+                <div class="d-grid gap-2 mt-3">
+                    <a href="{{ url_for('match.matches') }}" class="btn btn-outline-warning">View All Matches</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Player Management -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Squad Management</h4>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addPlayerModal">Add Player</button>
+            </div>
+            <div class="card-body">
+                {% if players %}
+                    <ul class="nav nav-tabs" id="playerTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">Active</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="injured-tab" data-bs-toggle="tab" data-bs-target="#injured" type="button" role="tab" aria-controls="injured" aria-selected="false">Injured</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="suspended-tab" data-bs-toggle="tab" data-bs-target="#suspended" type="button" role="tab" aria-controls="suspended" aria-selected="false">Suspended</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content pt-3" id="playerTabsContent">
+                        <div class="tab-pane fade show active" id="active" role="tabpanel" aria-labelledby="active-tab">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Player</th>
+                                            <th>Position</th>
+                                            <th>Fitness</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for player in active_players %}
+                                            <tr>
+                                                <td>{{ player.name }}</td>
+                                                <td>{{ player.position }}</td>
+                                                <td>
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ player.fitness }}%;" aria-valuenow="{{ player.fitness }}" aria-valuemin="0" aria-valuemax="100">{{ player.fitness }}%</div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="{{ url_for('player_details', player_id=player.id) }}" class="btn btn-outline-primary">View</a>
+                        <button class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#updatePlayerStatusModal{{ player.id }}">Status</button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <div class="tab-pane fade" id="injured" role="tabpanel" aria-labelledby="injured-tab">
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Player</th>
+                                                                    <th>Position</th>
+                                                                    <th>Injury</th>
+                                                                    <th>Expected Return</th>
+                                                                    <th>Actions</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <!-- Add content or ensure proper closing of tags -->
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                    

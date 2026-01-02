@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block title %}Medical Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Medical Staff Dashboard</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Medical Staff Profile -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Staff Profile</h4>
+            </div>
+            <div class="card-body">
+                <h5>{{ session.get('username') }}</h5>
+                <p><strong>Specialization:</strong> {{ staff[2] }}</p>
+                <p><strong>Qualification:</strong> {{ staff[3] }}</p>
+                <div class="d-grid mt-3">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Quick Actions</h4>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="#" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newRecordModal">Add New Medical Record</a>
+                    <a href="#" class="btn btn-outline-secondary">View All Players</a>
+                    <a href="#" class="btn btn-outline-info">Generate Reports</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- Active Cases -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Active Cases</h4>
+            </div>
+            <div class="card-body">
+                {% if active_cases %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Player</th>
+                                    <th>Team</th>
+                                    <th>Injury Type</th>
+                                    <th>Status</th>
+                                    <th>Expected Recovery</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for case in active_cases %}
+                                    <tr>
+                                        <td>{{ case[8] }}</td>
+                                        <td>{{ case[10] }}</td>
+                                        <td>{{ case[3] }}</td>
+                                        <td>
+                                            <span class="badge bg-warning">{{ case[7] }}</span>
+                                        </td>
+                                        <td>{{ case[6].strftime('%d-%m-%Y') }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updateRecordModal{{ case[0] }}">
+                                                Update
+                                            </button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-center">No active cases at the moment.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Records -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Recent Records</h4>
+            </div>
+            <div class="card-body">
+                {% if recent_records %}
+                    <div class="list-group">
+                        {% for record in recent_records %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ record[8] }} ({{ record[9] }})</h5>
+                                    <small>{{ record[2].strftime('%d-%m-%Y') }}</small>
+                                </div>
+                                <p class="mb-1"><strong>Team:</strong> {{ record[10] }}</p>
+                                <p class="mb-1"><strong>Issue:</strong> {{ record[3] }}</p>
+                                <p class="mb-1"><strong>Diagnosis:</strong> {{ record[4] }}</p>
+                                <p class="mb-1"><strong>Treatment:</strong> {{ record[5] }}</p>
+                                <p class="mb-0">
+                                    <span class="badge {{ 'bg-success' if record[7] == 'Recovered' else 'bg-warning' }}">
+                                        {{ record[7] }}
+                                    </span>
+                                </p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center">No medical records found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Record Modal -->
+<div class="modal fade" id="newRecordModal" tabindex="-1" aria-labelledby="newRecordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="newRecordModalLabel">Add New Medical Record</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('add_medical_record') }}" method="POST">
+                    <input type="hidden" name="staff_id" value="{{ staff[0] }}">
+                    
+                    <div class="mb-3">
+                        <label for="player_id" class="form-label">Player</label>
+                        <select class="form-select" id="player_id" name="player_id" required>
+                            <option value="" selected disabled>Select player</option>
+                            <!-- This would be populated from database -->
+                            <option value="1">John Doe (Forward, Team A)</option>
+                            <option value="2">Jane Smith (Midfielder, Team B)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="injury_type" class="form-label">Injury/Issue Type</label>
+                        <input type="text" class="form-control" id="injury_type" name="injury_type" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="diagnosis" class="form-label">Diagnosis</label>
+                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="treatment" class="form-label">Treatment Plan</label>
+                        <textarea class="form-control" id="treatment" name="treatment" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="expected_recovery" class="form-label">Expected Recovery Date</label>
+                            <input type="date" class="form-control" id="expected_recovery" name="expected_recovery" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="Ongoing">Ongoing Treatment</option>
+                                <option value="Monitoring">Monitoring</option>
+                                <option value="Recovered">Recovered</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('edit_medical_profile') }}" method="POST">
+                    <input type="hidden" name="staff_id" value="{{ staff[0] }}">
+                    
+                    <div class="mb-3">
+                        <label for="specialization" class="form-label">Specialization</label>
+                        <input type="text" class="form-control" id="specialization" name="specialization" value="{{ staff[2] }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="qualification" class="form-label">Qualification</label>
+                        <input type="text" class="form-control" id="qualification" name="qualification" value="{{ staff[3] }}" required>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Record Modals (would be dynamically generated for each active case) -->
+{% for case in active_cases %}
+<div class="modal fade" id="updateRecordModal{{ case[0] }}" tabindex="-1" aria-labelledby="updateRecordModalLabel{{ case[0] }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateRecordModalLabel{{ case[0] }}">Update Record for {{ case[8] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('update_medical_record') }}" method="POST">
+                    <input type="hidden" name="record_id" value="{{ case[0] }}">
+                    
+                    <div class="mb-3">
+                        <label for="diagnosis{{ case[0] }}" class="form-label">Diagnosis</label>
+                        <textarea class="form-control" id="diagnosis{{ case[0] }}" name="diagnosis" rows="3" required>{{ case[4] }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="treatment{{ case[0] }}" class="form-label">Treatment Plan</label>
+                        <textarea class="form-control" id="treatment{{ case[0] }}" name="treatment" rows="3" required>{{ case[5] }}</textarea>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="expected_recovery{{ case[0] }}" class="form-label">Expected Recovery Date</label>
+                            <input type="date" class="form-control" id="expected_recovery{{ case[0] }}" name="expected_recovery" value="{{ case[6].strftime('%Y-%m-%d') }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="status{{ case[0] }}" class="form-label">Status</label>
+                            <select class="form-select" id="status{{ case[0] }}" name="status" required>
+                                <option value="Ongoing" {{ 'selected' if case[7] == 'Ongoing' else '' }}>Ongoing Treatment</option>
+                                <option value="Monitoring" {{ 'selected' if case[7] == 'Monitoring' else '' }}>Monitoring</option>
+                                <option value="Recovered" {{ 'selected' if case[7] == 'Recovered' else '' }}>Recovered</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Record</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

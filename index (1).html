@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 text-center">
+        <h1 class="display-4 mb-4">Welcome to Sports Management System</h1>
+        <p class="lead">A comprehensive solution for managing sports clubs, teams, players, and events.</p>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="card-title">Players</h3>
+                <p class="card-text">Manage player profiles, statistics, and performance metrics.</p>
+                {% if session.get('user_id') %}
+                    {% if session.get('role') in ['admin', 'coach'] %}
+                        <a href="#" class="btn btn-primary">Manage Players</a>
+                    {% elif session.get('role') == 'player' %}
+                        <a href="{{ url_for('player_dashboard') }}" class="btn btn-primary">My Profile</a>
+                    {% else %}
+                        <a href="#" class="btn btn-outline-primary">View Players</a>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary">Login to Access</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="card-title">Matches</h3>
+                <p class="card-text">Schedule, manage, and track match details and results.</p>
+                {% if session.get('user_id') %}
+                    {% if session.get('role') in ['admin', 'coach'] %}
+                        <a href="{{ url_for('match.matches') }}" class="btn btn-primary">Manage Matches</a>
+                    {% else %}
+                        <a href="{{ url_for('match.upcoming_matches') }}" class="btn btn-outline-primary">View Matches</a>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-secondary">Login to Access</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3 class="card-title">Fan Zone</h3>
+                <p class="card-text">Engage with your favorite teams and players.</p>
+                {% if session.get('user_id') and session.get('role') == 'fan' %}
+                    <a href="{{ url_for('fan_dashboard') }}" class="btn btn-primary">Fan Dashboard</a>
+                {% elif session.get('user_id') %}
+                    <a href="#" class="btn btn-outline-primary">Fan Engagement</a>
+                {% else %}
+                    <a href="{{ url_for('register') }}" class="btn btn-success">Register as Fan</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>Upcoming Matches</h3>
+            </div>
+            <div class="card-body">
+                <!-- This would typically be populated from the database -->
+                <p class="text-center">No upcoming matches to display.</p>
+                <p class="text-center">
+                    <a href="{{ url_for('match.upcoming_matches') if session.get('user_id') else url_for('login') }}" class="btn btn-outline-primary">
+                        View All Matches
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h3>Join Us</h3>
+            </div>
+            <div class="card-body">
+                {% if not session.get('user_id') %}
+                    <p>Register now to access all features of our Sports Management System.</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('register') }}" class="btn btn-success">Register</a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Login</a>
+                    </div>
+                {% else %}
+                    <p>Welcome back! Go to your dashboard to access all features.</p>
+                    <div class="d-grid">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

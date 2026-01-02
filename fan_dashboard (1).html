@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Fan Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>Fan Dashboard</h1>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Fan Profile -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Fan Profile</h4>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ url_for('static', filename='img/default-fan.png') }}" alt="Fan Profile" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                <h3>{{ session.get('username') }}</h3>
+                <p><strong>Membership Type:</strong> {{ fan[2] }}</p>
+                <p><strong>Member Since:</strong> {{ fan[3].strftime('%d %B %Y') }}</p>
+                <p><strong>Loyalty Points:</strong> <span class="badge bg-success">{{ fan[4] }}</span></p>
+                <div class="d-grid mt-3">
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                        Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fan Stats -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Your Stats</h4>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h2>{{ stats.matches_attended|default(0) }}</h2>
+                        <p>Matches<br>Attended</p>
+                    </div>
+                    <div class="col-4">
+                        <h2>{{ stats.comments|default(0) }}</h2>
+                        <p>Comments<br>Posted</p>
+                    </div>
+                    <div class="col-4">
+                        <h2>{{ stats.predictions|default(0) }}</h2>
+                        <p>Score<br>Predictions</p>
+                    </div>
+                </div>
+                <div class="progress mt-3" title="Profile Completion">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ stats.profile_completion|default(50) }}%;" aria-valuenow="{{ stats.profile_completion|default(50) }}" aria-valuemin="0" aria-valuemax="100">{{ stats.profile_completion|default(50) }}% Complete</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Support/Fan Zone -->
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">Fan Zone</h4>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('fan_forum') }}" class="btn btn-outline-danger">Fan Forum</a>
+                    <a href="{{ url_for('team_merchandise') }}" class="btn btn-outline-danger">Team Merchandise</a>
+                    <a href="{{ url_for('ticket_booking') }}" class="btn btn-outline-danger">Book Match Tickets</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- Upcoming Matches -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Upcoming Matches</h4>
+            </div>
+            <div class="card-body">
+                {% if upcoming_matches %}
+                    <div class="row">
+                        {% for match in upcoming_matches %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ match[8] }} vs {{ match[9] }}</h5>
+                                        <h6 class="card-subtitle mb-2 text-muted">{{ match[3].strftime('%d %B %Y, %H:%M') }}</h6>
+                                        <p class="card-text"><strong>Venue:</strong> {{ match[10] }}</p>
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ url_for('match.match_details', match_id=match[0]) }}" class="btn btn-sm btn-outline-primary">View Details</a>
+                                            <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#predictScoreModal{{ match[0] }}">Predict Score</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Score Prediction Modal for each match -->
+                            <div class="modal fade" id="predictScoreModal{{ match[0] }}" tabindex="-1" aria-labelledby="predictScoreModalLabel{{ match[0] }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="predictScoreModalLabel{{ match[0] }}">Predict Score: {{ match[8] }} vs {{ match[9] }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form action="{{ url_for('predict_score') }}" method="POST">
+                                                <input type="hidden" name="match_id" value="{{ match[0] }}">
+                                                <input type="hidden" name="fan_id" value="{{ fan[0] }}">
+                                                
+                                                <div class="row mb-3">
+                                                    <div class="col-5 text-center">
+                                                        <label for="home_score{{ match[0] }}" class="form-label">{{ match[8] }}</label>
+                                                        <input type="number" class="form-control text-center" id="home_score{{ match[0] }}" name="home_score" min="0" value="0" required>
+                                                    </div>
+                                                    <div class="col-2 text-center d-flex align-items-center justify-content-center">
+                                                        <span class="fs-4">-</span>
+                                                    </div>
+                                                    <div class="col-5 text-center">
+                                                        <label for="away_score{{ match[0] }}" class="form-label">{{ match[9] }}</label>
+                                                        <input type="number" class="form-control text-center" id="away_score{{ match[0] }}" name="away_score" min="0" value="0" required>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label for="comment{{ match[0] }}" class="form-label">Comment (optional)</label>
+                                                    <textarea class="form-control" id="comment{{ match[0] }}" name="comment" rows="2"></textarea>
+                                                </div>
+                                                
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-success">Submit Prediction</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid mt-3">
+                        <a href="{{ url_for('match.upcoming_matches') }}" class="btn btn-warning">View All Upcoming Matches</a>
+                    </div>
+                {% else %}
+                    <p class="text-center">No upcoming matches scheduled.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Your Recent Activity</h4>
+            </div>
+            <div class="card-body">
+                {% if engagement_history %}
+                    <div class="list-group">
+                        {% for engagement in engagement_history %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ engagement[5] }}</h5>
+                                    <small>{{ engagement[4].strftime('%d %B %Y, %H:%M') }}</small>
+                                </div>
+                                <p class="mb-1">
+                                    <strong>Match:</strong> {{ engagement[8] }} vs {{ engagement[9] }} ({{ engagement[7].strftime('%d %B %Y') }})
+                                </p>
+                                {% if engagement[6] %}
+                                    <p class="mb-1">{{ engagement[6] }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center">No recent activity found.</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- News Feed -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h4 class="mb-0">Club News</h4>
+            </div>
+            <div class="card-body">
+                {% if news_items %}
+                    <div class="list-group">
+                        {% for news in news_items %}
+                            <a href="{{ url_for('news_details', news_id=news.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ news.title }}</h5>
+                                    <small>{{ news.date }}</small>
+                                </div>
+                                <p class="mb-1">{{ news.summary }}</p>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-center">No news items available.</p>
+                {% endif %}
+                <div class="d-grid mt-3">
+                    <a href="{{ url_for('club_news') }}" class="btn btn-outline-secondary">View All News</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('edit_fan_profile') }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="fan_id" value="{{ fan[0] }}">
+                    
+                    <div class="mb-3">
+                        <label for="profile_picture" class="form-label">Profile Picture</label>
+                        <input type="file" class="form-control" id="profile_picture" name="profile_picture">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="favorite_team" class="form-label">Favorite Team</label>
+                        <select class="form-select" id="favorite_team" name="favorite_team">
+                            <option value="" selected disabled>Select favorite team</option>
+                            {% for team in teams %}
+                                <option value="{{ team.id }}" {{ 'selected' if team.id == favorite_team else '' }}>{{ team.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notification_preferences" class="form-label">Notification Preferences</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="match_notifications" name="notifications[]" value="matches" checked>
+                            <label class="form-check-label" for="match_notifications">Match Updates</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="team_notifications" name="notifications[]" value="team" checked>
+                            <label class="form-check-label" for="team_notifications">Team News</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="event_notifications" name="notifications[]" value="events">
+                            <label class="form-check-label" for="event_notifications">Fan Events</label>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
